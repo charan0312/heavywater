@@ -42,7 +42,7 @@ if __name__ == '__main__':
     try:
         port = int(sys.argv[1]) # This is for a command-line input
     except:
-        port = 6000 
+        port = 8080 
 
     
     loaded_model = load_model('nn_model.h5')
