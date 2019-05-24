@@ -1,10 +1,10 @@
-#import pandas as pd
+import traceback, json
+import pandas as pd
 import numpy as np
 
 from flask import Flask, request, jsonify, render_template
 from keras.models import load_model
-from sklearn.externals import joblib
-#from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer
 
 # Your API definition
 app = Flask(__name__)
@@ -12,56 +12,55 @@ app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return render_template('home.html')
+    return "Hi Charan"
 
-@app.route('/about/')
-def about():
-    return render_template('about.html')
+#@app.route('/about/')
+#def about():
+#    return render_template('about.html')
 
-@app.route('/error/')
-def error():
-    return render_template('error.html')
-
-@app.route('/predict', methods=['GET','POST'])
+@app.route('/predict', methods=['POST'])
 def predict():
-    if request.method == 'POST':
-        if loaded_model:
-            try:
-                doc = request.form['document']
-                if doc.isspace():
-                    return render_template('error.html')
-                else:
-                    comment = doc.split(':')
-                      
-                    #print(comment, len(comment))
-                    l = []
-                    
-                    for i in range(len(comment)):
-                        
-                        padded_1 = vectorizer.transform([comment[i]])
+    if loaded_model:
+        try:
+            json_ = request.json
+            print(json_)
+            query = pd.DataFrame(json_)
             
-                        pred_1 = loaded_model.predict(padded_1)
-                        l.append([labels[np.argmax(pred_1)], max(pred_1[0])])
-                        
-               
-                    return render_template('result.html',prediction = l)
-    
-            except:
-    
-                return render_template('error.html')
-        else:
-            print ('Train the model first')
-            return ('No model here to use')
+
+            
+            
+            labels = ['APPLICATION', 'BILL', 'BILL BINDER', 'BINDER', 'CANCELLATION NOTICE',
+       'CHANGE ENDORSEMENT', 'DECLARATION', 'DELETION OF INTEREST',
+       'EXPIRATION NOTICE', 'INTENT TO CANCEL NOTICE', 'NON-RENEWAL NOTICE',
+       'POLICY CHANGE', 'REINSTATEMENT NOTICE', 'RETURNED CHECK']
+            
+
+
+            padded_1 = vectorizer.transform(query.values)
+
+            pred_1 = loaded_model.predict(padded_1)
+            
+
+            return jsonify({'prediction': str(labels[np.argmax(pred_1)]) + str(max(pred_1[0]))})
+
+        except:
+
+            return jsonify({'trace': traceback.format_exc()})
+    else:
+        print ('Train the model first')
+        return ('No model here to use')
     
     
 if __name__ == '__main__':
     try:
         port = int(sys.argv[1]) # This is for a command-line input
     except:
-        port = 5000 
+        port = 12345 # If you don't provide any port the port will be set to 12345
 
+    #lr = joblib.load("model.pkl") # Load "model.pkl"
     loaded_model = load_model('nn_model.h5')
-    vectorizer = joblib.load("vec.pkl") # Load "model_columns.pkl"
-    labels = ['APPLICATION', 'BILL', 'BILL BINDER', 'BINDER', 'CANCELLATION NOTICE','CHANGE ENDORSEMENT', 'DECLARATION', 'DELETION OF INTEREST','EXPIRATION NOTICE', 'INTENT TO CANCEL NOTICE', 'NON-RENEWAL NOTICE','POLICY CHANGE', 'REINSTATEMENT NOTICE', 'RETURNED CHECK']
+    print ('Model loaded')
+    #model_columns = joblib.load("model_columns.pkl") # Load "model_columns.pkl"
+    print ('Model columns loaded')
 
-    app.run(host='0.0.0.0', port=port, debug=True, use_reloader=False)
+    app.run(port=port, debug=True)
